@@ -1,5 +1,7 @@
 package hello;
 
+import hello.dto.ChoiceProjected;
+import hello.dto.EventVotes;
 import hello.entity.Choice;
 import hello.entity.Event;
 import hello.entity.Vote;
@@ -88,17 +90,18 @@ public class MainController {
 
 	// generate a matrix of users x choices with true/false entries
 	@GetMapping(path="/eventVotes")
-	public @ResponseBody String eventVotes(@RequestParam Long eventId) {
+	public @ResponseBody EventVotes eventVotes(@RequestParam Long eventId) {
 		Optional<Event> event = eventRepository.findById(eventId);
 		// choice id indexed by position
 		ArrayList<Long> choiceIds = new ArrayList<>();
+		// vote boolean list hashed by user id
 		Map<Long, boolean[]> votes = new HashMap<>();
 		if (event.isPresent()) {
 			for (Choice c : event.get().getChoices()) {
 				choiceIds.add(c.getId());
 			}
-			int i = 0;
-			for (Choice c : event.get().getChoices()) {
+			for (int i=0; i<choiceIds.size(); i++) {
+				Choice c = choiceRepository.findById(choiceIds.get(i)).get();
 				for (Vote v : c.getVotes()) {
 					User u = v.getUser();
 					if (!votes.containsKey(u.getId())) {
@@ -108,18 +111,20 @@ public class MainController {
 						votes.get(u.getId())[i] = true;
 					}
 				}
-				i++;
 			}
 		}
-		StringBuffer sb = new StringBuffer();
+        EventVotes eventVotes = new EventVotes();
+
+        for (int i=0; i<choiceIds.size(); i++) {
+            Choice choice = choiceRepository.findById(choiceIds.get(i)).get();
+            eventVotes.choices.add(new ChoiceProjected(choice));
+        }
+
 		for (Map.Entry<Long, boolean[]> entry : votes.entrySet()) {
-			sb.append(entry.getKey() + ": ");
-			for (boolean b : entry.getValue()) {
-				sb.append(b + ", ");
-			}
-			sb.append("\n");
+		    eventVotes.users.add(userRepository.findById(entry.getKey()).get());
+            eventVotes.votedFor.add(entry.getValue());
 		}
-		return sb.toString();
+		return eventVotes;
 	}
 
 
