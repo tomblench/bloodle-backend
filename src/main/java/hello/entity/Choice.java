@@ -1,5 +1,7 @@
 package hello.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import javax.persistence.*;
 import java.util.List;
 
@@ -16,10 +18,12 @@ public class Choice {
     @Column
     private String title;
 
+    @JsonIgnore
     @ManyToOne
     @JoinColumn(name = "event_id")
     private Event event;
 
+    @JsonIgnore
     @OneToMany(mappedBy = "choice")
     private List<Vote> votes;
 
